@@ -5,6 +5,7 @@ const base_1 = require("@atomiqlabs/base");
 const sdk_lib_1 = require("@atomiqlabs/sdk-lib");
 const SmartChainAssets_1 = require("./SmartChainAssets");
 const LocalStorageManager_1 = require("./storage/LocalStorageManager");
+const messenger_nostr_1 = require("@atomiqlabs/messenger-nostr");
 const registries = {
     [base_1.BitcoinNetwork.MAINNET]: "https://api.github.com/repos/adambor/SolLightning-registry/contents/registry-mainnet.json?ref=main",
     [base_1.BitcoinNetwork.TESTNET]: "https://api.github.com/repos/adambor/SolLightning-registry/contents/registry.json?ref=main",
@@ -34,6 +35,9 @@ const mempoolUrls = {
         "https://mempool.tk7.mempool.space/testnet4/api/"
     ]
 };
+const nostrUrls = [
+    "wss://relay.damus.io", "wss://nostr.einundzwanzig.space", "wss://nostr.mutinywallet.com"
+];
 class SwapperFactory {
     constructor(initializers) {
         this.initializers = initializers;
@@ -65,6 +69,7 @@ class SwapperFactory {
     newSwapper(options) {
         options.bitcoinNetwork ?? (options.bitcoinNetwork = base_1.BitcoinNetwork.MAINNET);
         options.storagePrefix ?? (options.storagePrefix = "atomiqsdk-" + options.bitcoinNetwork + "-");
+        options.messenger ?? (options.messenger = new messenger_nostr_1.NostrMessenger(nostrUrls));
         options.defaultTrustedIntermediaryUrl ?? (options.defaultTrustedIntermediaryUrl = trustedIntermediaries[options.bitcoinNetwork]);
         options.registryUrl ?? (options.registryUrl = registries[options.bitcoinNetwork]);
         const mempoolApi = options.mempoolApi ?? new sdk_lib_1.MempoolBitcoinRpc(mempoolUrls[options.bitcoinNetwork]);
@@ -99,7 +104,7 @@ class SwapperFactory {
                 };
             }), options.getPriceFn)) :
             sdk_lib_1.RedundantSwapPrice.createFromTokenMap(options.pricingFeeDifferencePPM ?? 10000n, pricingAssets);
-        return new sdk_lib_1.Swapper(bitcoinRpc, chains, swapPricing, pricingAssets, options);
+        return new sdk_lib_1.Swapper(bitcoinRpc, chains, swapPricing, pricingAssets, options.messenger, options);
     }
 }
 exports.SwapperFactory = SwapperFactory;
